@@ -114,7 +114,13 @@ module CloudfrontAssetHost
 
     def enable!
       if enabled
-        ActionController::Base.asset_host = Proc.new { |source, request| CloudfrontAssetHost.asset_host(source, request) }
+        ActionController::Base.asset_host = Proc.new { |source, request| 
+          if request.ssl?
+            "#{request.protocol}#{request.host_with_port}"
+          else
+            CloudfrontAssetHost.asset_host(source, request)
+          end
+        }
         ActionView::Helpers::AssetTagHelper.send(:alias_method_chain, :rewrite_asset_path, :cloudfront)
         ActionView::Helpers::AssetTagHelper.send(:alias_method_chain, :rails_asset_id, :cloudfront)
       end
@@ -153,7 +159,5 @@ module CloudfrontAssetHost
     def md5sum(path)
       Digest::MD5.hexdigest(File.read(path))
     end
-
   end
-
 end
